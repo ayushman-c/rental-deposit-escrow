@@ -1,0 +1,33 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EscrowStatus {
+  Created
+  WaitingDeposit
+  Locked
+  ReleaseRequested
+  Completed
+  Disputed
+  Resolved
+}
+
+model Escrow {
+  id             String       @id @default(uuid())
+  escrowId       BigInt       @unique
+  landlord       String
+  tenant         String
+  depositAmount  BigInt
+  token          String
+  rentalEndDate  BigInt
+  status         EscrowStatus @default(Created)
+  contractId     String
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
