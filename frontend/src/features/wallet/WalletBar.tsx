@@ -1,5 +1,3 @@
-"use client";
-
 import { useWallet } from "@/providers/WalletProvider";
 import { Button } from "@/components/Button";
 
