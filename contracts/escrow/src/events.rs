@@ -7,6 +7,8 @@ const RELEASE_APPROVED: Symbol = symbol_short!("REL_APPR");
 const DISPUTE_RAISED: Symbol = symbol_short!("DISP_RAIS");
 const DISPUTE_RESOLVED: Symbol = symbol_short!("DISP_RES");
 const CANCELLED: Symbol = symbol_short!("CANCELLED");
+const RELEASE_AUTO: Symbol = symbol_short!("REL_AUTO");
+const REFUNDED: Symbol = symbol_short!("REFUNDED");
 
 pub fn emit_escrow_created(env: &Env, escrow_id: u64, landlord: &Address, tenant: &Address, amount: i128) {
     env.events().publish(
@@ -53,6 +55,20 @@ pub fn emit_dispute_resolved(env: &Env, escrow_id: u64, admin: &Address, tenant_
 pub fn emit_cancelled(env: &Env, escrow_id: u64, from: &Address) {
     env.events().publish(
         (CANCELLED, escrow_id),
+        from.clone(),
+    );
+}
+
+pub fn emit_release_auto(env: &Env, escrow_id: u64, from: &Address) {
+    env.events().publish(
+        (RELEASE_AUTO, escrow_id),
+        from.clone(),
+    );
+}
+
+pub fn emit_refunded(env: &Env, escrow_id: u64, from: &Address) {
+    env.events().publish(
+        (REFUNDED, escrow_id),
         from.clone(),
     );
 }

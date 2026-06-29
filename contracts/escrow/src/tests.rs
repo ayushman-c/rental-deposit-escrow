@@ -272,6 +272,107 @@ fn test_full_dispute_path() {
 }
 
 #[test]
+fn test_release_after_timeout() {
+    let (env, contract_id, _admin) = setup();
+    let token = create_token(&env, &_admin);
+    let landlord = Address::generate(&env);
+    let tenant = Address::generate(&env);
+
+    let sac = token::StellarAssetClient::new(&env, &token);
+    sac.mint(&tenant, &1_000_000_000);
+
+    let id = make_escrow(&env, &contract_id, &landlord, &tenant, 500_000_000, &token);
+    call(&env, &contract_id, "deposit", (id, tenant.clone()));
+    call(&env, &contract_id, "request_release", (id, landlord.clone()));
+
+    env.ledger().set(LedgerInfo {
+        timestamp: 1000 + 86400 * 14 + 1,
+        ..env.ledger().get()
+    });
+
+    let lb_before = token::Client::new(&env, &token).balance(&landlord);
+    call(&env, &contract_id, "release_after_timeout", (id, landlord.clone()));
+
+    let escrow: Escrow = call_get(&env, &contract_id, "get_escrow", (id,));
+    assert_eq!(escrow.status, EscrowStatus::Completed);
+    assert_eq!(token::Client::new(&env, &token).balance(&landlord), lb_before + 500_000_000);
+    assert_eq!(token::Client::new(&env, &token).balance(&contract_id), 0);
+}
+
+#[test]
+fn test_refund_after_expiry() {
+    let (env, contract_id, _admin) = setup();
+    let token = create_token(&env, &_admin);
+    let landlord = Address::generate(&env);
+    let tenant = Address::generate(&env);
+
+    let sac = token::StellarAssetClient::new(&env, &token);
+    sac.mint(&tenant, &1_000_000_000);
+
+    let future = env.ledger().timestamp() + 86400 * 10;
+    let id: u64 = call_get(
+        &env,
+        &contract_id,
+        "create_escrow",
+        (landlord.clone(), tenant.clone(), 500_000_000i128, token.clone(), future),
+    );
+
+    call(&env, &contract_id, "deposit", (id, tenant.clone()));
+
+    env.ledger().set(LedgerInfo {
+        timestamp: future + 86400 * 7 + 1,
+        ..env.ledger().get()
+    });
+
+    let tn_before = token::Client::new(&env, &token).balance(&tenant);
+    call(&env, &contract_id, "refund_after_expiry", (id, tenant.clone()));
+
+    let escrow: Escrow = call_get(&env, &contract_id, "get_escrow", (id,));
+    assert_eq!(escrow.status, EscrowStatus::Completed);
+    assert_eq!(token::Client::new(&env, &token).balance(&tenant), tn_before + 500_000_000);
+    assert_eq!(token::Client::new(&env, &token).balance(&contract_id), 0);
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #14)")]
+fn test_release_after_timeout_before_timeout_fails() {
+    let (env, contract_id, _admin) = setup();
+    let token = create_token(&env, &_admin);
+    let landlord = Address::generate(&env);
+    let tenant = Address::generate(&env);
+
+    let sac = token::StellarAssetClient::new(&env, &token);
+    sac.mint(&tenant, &1_000_000_000);
+
+    let id = make_escrow(&env, &contract_id, &landlord, &tenant, 500_000_000, &token);
+    call(&env, &contract_id, "deposit", (id, tenant.clone()));
+    call(&env, &contract_id, "request_release", (id, landlord.clone()));
+    call(&env, &contract_id, "release_after_timeout", (id, landlord));
+}
+
+#[test]
+#[should_panic(expected = "Error(Contract, #14)")]
+fn test_refund_after_expiry_before_expiry_fails() {
+    let (env, contract_id, _admin) = setup();
+    let token = create_token(&env, &_admin);
+    let landlord = Address::generate(&env);
+    let tenant = Address::generate(&env);
+
+    let future = env.ledger().timestamp() + 86400 * 10;
+    let sac = token::StellarAssetClient::new(&env, &token);
+    sac.mint(&tenant, &1_000_000_000);
+
+    let id: u64 = call_get(
+        &env,
+        &contract_id,
+        "create_escrow",
+        (landlord.clone(), tenant.clone(), 500_000_000i128, token.clone(), future),
+    );
+    call(&env, &contract_id, "deposit", (id, tenant.clone()));
+    call(&env, &contract_id, "refund_after_expiry", (id, tenant.clone()));
+}
+
+#[test]
 fn test_multiple_escrows() {
     let (env, contract_id, _admin) = setup();
     let token = create_token(&env, &_admin);

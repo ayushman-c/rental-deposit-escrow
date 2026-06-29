@@ -13,6 +13,9 @@ mod tests;
 use errors::EscrowError;
 use types::{Escrow, EscrowStatus};
 
+const RELEASE_TIMEOUT: u64 = 86400 * 14; // 14 days
+const EXPIRY_GRACE_PERIOD: u64 = 86400 * 7; // 7 days after rental end date
+
 fn validate_escrow_exists(env: &Env, escrow_id: u64) -> Result<Escrow, EscrowError> {
     storage::load_escrow(env, escrow_id)
 }
@@ -81,6 +84,7 @@ impl EscrowContract {
             rental_end_date,
             status: EscrowStatus::Created,
             created_at: env.ledger().timestamp(),
+            release_requested_at: 0,
             tenant_amount: 0,
             landlord_amount: 0,
         };
@@ -127,7 +131,7 @@ impl EscrowContract {
     pub fn request_release(env: Env, escrow_id: u64, from: Address) -> Result<(), EscrowError> {
         validate_authorization(&from);
 
-        let escrow = validate_escrow_exists(&env, escrow_id)?;
+        let mut escrow = validate_escrow_exists(&env, escrow_id)?;
 
         if from != escrow.landlord {
             return Err(EscrowError::NotLandlord);
@@ -135,7 +139,9 @@ impl EscrowContract {
 
         validate_state(&escrow, &[EscrowStatus::Locked])?;
 
-        storage::update_escrow_status(&env, escrow_id, EscrowStatus::ReleaseRequested)?;
+        escrow.status = EscrowStatus::ReleaseRequested;
+        escrow.release_requested_at = env.ledger().timestamp();
+        storage::save_escrow(&env, &escrow);
         events::emit_release_requested(&env, escrow_id, &from);
 
         Ok(())
@@ -163,6 +169,72 @@ impl EscrowContract {
             &escrow.landlord,
             escrow.deposit_amount,
         );
+
+        Ok(())
+    }
+
+    pub fn release_after_timeout(env: Env, escrow_id: u64, from: Address) -> Result<(), EscrowError> {
+        validate_authorization(&from);
+
+        let mut escrow = validate_escrow_exists(&env, escrow_id)?;
+
+        if from != escrow.landlord {
+            return Err(EscrowError::NotLandlord);
+        }
+
+        if escrow.status != EscrowStatus::ReleaseRequested {
+            return Err(EscrowError::InvalidState);
+        }
+
+        if env.ledger().timestamp() < escrow.release_requested_at + RELEASE_TIMEOUT {
+            return Err(EscrowError::TimeoutNotElapsed);
+        }
+
+        escrow.status = EscrowStatus::Completed;
+        storage::save_escrow(&env, &escrow);
+
+        transfer_tokens(
+            &env,
+            &escrow.token,
+            &env.current_contract_address(),
+            &escrow.landlord,
+            escrow.deposit_amount,
+        );
+
+        events::emit_release_auto(&env, escrow_id, &from);
+
+        Ok(())
+    }
+
+    pub fn refund_after_expiry(env: Env, escrow_id: u64, from: Address) -> Result<(), EscrowError> {
+        validate_authorization(&from);
+
+        let mut escrow = validate_escrow_exists(&env, escrow_id)?;
+
+        if from != escrow.tenant {
+            return Err(EscrowError::NotTenant);
+        }
+
+        if escrow.status != EscrowStatus::Locked {
+            return Err(EscrowError::InvalidState);
+        }
+
+        if env.ledger().timestamp() < escrow.rental_end_date + EXPIRY_GRACE_PERIOD {
+            return Err(EscrowError::TimeoutNotElapsed);
+        }
+
+        escrow.status = EscrowStatus::Completed;
+        storage::save_escrow(&env, &escrow);
+
+        transfer_tokens(
+            &env,
+            &escrow.token,
+            &env.current_contract_address(),
+            &escrow.tenant,
+            escrow.deposit_amount,
+        );
+
+        events::emit_refunded(&env, escrow_id, &from);
 
         Ok(())
     }

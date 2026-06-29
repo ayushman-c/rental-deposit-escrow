@@ -16,4 +16,5 @@ pub enum EscrowError {
     AlreadyCancelled = 11,
     CannotCancelAfterDeposit = 12,
     NotAdmin = 13,
+    TimeoutNotElapsed = 14,
 }

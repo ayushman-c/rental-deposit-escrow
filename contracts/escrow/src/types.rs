@@ -23,6 +23,7 @@ pub struct Escrow {
     pub rental_end_date: u64,
     pub status: EscrowStatus,
     pub created_at: u64,
+    pub release_requested_at: u64,
     pub tenant_amount: i128,
     pub landlord_amount: i128,
 }
