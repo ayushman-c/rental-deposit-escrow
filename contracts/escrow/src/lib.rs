@@ -152,6 +152,10 @@ impl EscrowContract {
 
         validate_state(&escrow, &[EscrowStatus::ReleaseRequested])?;
 
+        escrow.status = EscrowStatus::Completed;
+        storage::save_escrow(&env, &escrow);
+        events::emit_release_approved(&env, escrow_id, &from);
+
         transfer_tokens(
             &env,
             &escrow.token,
@@ -159,10 +163,6 @@ impl EscrowContract {
             &escrow.landlord,
             escrow.deposit_amount,
         );
-
-        escrow.status = EscrowStatus::Completed;
-        storage::save_escrow(&env, &escrow);
-        events::emit_release_approved(&env, escrow_id, &from);
 
         Ok(())
     }
@@ -215,6 +215,12 @@ impl EscrowContract {
             return Err(EscrowError::InvalidAmount);
         }
 
+        escrow.tenant_amount = tenant_amount;
+        escrow.landlord_amount = landlord_amount;
+        escrow.status = EscrowStatus::Resolved;
+        storage::save_escrow(&env, &escrow);
+        events::emit_dispute_resolved(&env, escrow_id, &from, tenant_amount, landlord_amount);
+
         if tenant_amount > 0 {
             transfer_tokens(
                 &env,
@@ -234,12 +240,6 @@ impl EscrowContract {
                 landlord_amount,
             );
         }
-
-        escrow.tenant_amount = tenant_amount;
-        escrow.landlord_amount = landlord_amount;
-        escrow.status = EscrowStatus::Resolved;
-        storage::save_escrow(&env, &escrow);
-        events::emit_dispute_resolved(&env, escrow_id, &from, tenant_amount, landlord_amount);
 
         Ok(())
     }
