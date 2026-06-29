@@ -334,7 +334,7 @@ fn test_refund_after_expiry() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #14)")]
+#[should_panic(expected = "Error(Contract, #11)")]
 fn test_release_after_timeout_before_timeout_fails() {
     let (env, contract_id, _admin) = setup();
     let token = create_token(&env, &_admin);
@@ -351,7 +351,7 @@ fn test_release_after_timeout_before_timeout_fails() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #14)")]
+#[should_panic(expected = "Error(Contract, #11)")]
 fn test_refund_after_expiry_before_expiry_fails() {
     let (env, contract_id, _admin) = setup();
     let token = create_token(&env, &_admin);
@@ -463,7 +463,7 @@ fn test_request_release_not_landlord_fails() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #8)")]
+#[should_panic(expected = "Error(Contract, #7)")]
 fn test_create_escrow_zero_amount_fails() {
     let (env, contract_id, _admin) = setup();
     let token = create_token(&env, &_admin);
@@ -496,7 +496,7 @@ fn test_double_deposit_fails() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #13)")]
+#[should_panic(expected = "Error(Contract, #10)")]
 fn test_resolve_not_admin_fails() {
     let (env, contract_id, _admin) = setup();
     let token = create_token(&env, &_admin);
@@ -513,7 +513,7 @@ fn test_resolve_not_admin_fails() {
 }
 
 #[test]
-#[should_panic(expected = "Error(Contract, #12)")]
+#[should_panic(expected = "Error(Contract, #9)")]
 fn test_cancel_after_deposit_fails() {
     let (env, contract_id, _admin) = setup();
     let token = create_token(&env, &_admin);
