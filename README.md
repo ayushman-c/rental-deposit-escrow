@@ -7,8 +7,8 @@ A decentralized rental deposit escrow dApp built on **Stellar Soroban**. Tenants
 ```
 rental-deposit-escrow/
 ├── contracts/escrow/     # Soroban smart contract (Rust)
-├── frontend/             # React + Vite + TypeScript + Tailwind (planned)
-├── backend/              # Node.js + Express + Prisma + PostgreSQL (planned)
+├── frontend/             # React + Vite + TypeScript + Tailwind
+├── backend/              # Node.js + Express + TypeScript + Prisma + PostgreSQL
 ├── scripts/              # Deployment & utility scripts
 └── assets/               # Screenshots & media
 ```
@@ -157,9 +157,17 @@ stellar contract invoke \
 ## Tech Stack
 
 - **Smart Contract**: Rust, Soroban SDK 21.7.7
-- **Frontend** (planned): React, Vite, TypeScript, TailwindCSS, Stellar Wallet Kit
-- **Backend** (planned): Node.js, Express, Prisma, PostgreSQL
+- **Frontend**: React 19, Vite 6, TypeScript, TailwindCSS 4, Framer Motion, Stellar Wallet Kit
+- **Backend**: Node.js, Express, TypeScript, Prisma, PostgreSQL, Zod, express-rate-limit
 - **CLI**: Stellar CLI 25.2.0
+
+## Recent Improvements
+
+- **Rate limiting**: Auth endpoints are rate-limited (20 requests per 15 minutes) via `express-rate-limit`
+- **PATCH status endpoint**: Missing `updateStatus` route added at `PATCH /api/escrows/:id/status`
+- **Typed API client**: Replaced `any` payloads with specific TypeScript interfaces (`EscrowActionInput`, `ResolveDisputeInput`, etc.)
+- **Stepper fixes**: EscrowStepper now handles `Disputed`, `Resolved`, and `WaitingDeposit` states gracefully
+- **Cleaned up directives**: Removed stale `"use client"` directives from non-Next.js files
 
 ## License
 
