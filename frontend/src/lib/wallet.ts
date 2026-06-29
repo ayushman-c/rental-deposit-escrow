@@ -1,9 +1,11 @@
-"use client";
+import type { BuildResponse } from "@/types";
+import { api } from "@/lib/api";
 
 type StellarWalletsKitType = typeof import("@creit.tech/stellar-wallets-kit").StellarWalletsKit;
 type NetworksType = typeof import("@creit.tech/stellar-wallets-kit").Networks;
 
-let initPromise: Promise<{ StellarWalletsKit: StellarWalletsKitType; Networks: NetworksType }> | null = null;
+let initPromise: Promise<{ StellarWalletsKit: StellarWalletsKitType; Networks: NetworksType }> | null =
+  null;
 
 async function ensureInit() {
   if (!initPromise) {
@@ -73,4 +75,12 @@ export async function signTransaction(
     networkPassphrase: opts?.networkPassphrase || Networks.TESTNET,
   });
   return signedTxXdr;
+}
+
+export async function buildSignAndSubmit(
+  buildFn: () => Promise<BuildResponse>,
+): Promise<{ hash: string; status: string }> {
+  const { xdr, networkPassphrase } = await buildFn();
+  const signedXdr = await signTransaction(xdr, { networkPassphrase });
+  return api.submit(signedXdr);
 }
