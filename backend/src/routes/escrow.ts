@@ -6,6 +6,7 @@ import {
   actionWithEscrowIdSchema,
   resolveDisputeSchema,
   submitSchema,
+  updateStatusSchema,
 } from "../middleware/validation";
 import { authenticate } from "../middleware/auth";
 
@@ -33,5 +34,6 @@ router.get("/count", escrowController.getEscrowCount);
 router.post("/", validate(createEscrowSchema), escrowController.createEscrow);
 router.get("/", escrowController.listEscrows);
 router.get("/:id", escrowController.getEscrow);
+router.patch("/:id/status", validate(updateStatusSchema), escrowController.updateStatus);
 
 export default router;

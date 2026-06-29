@@ -32,6 +32,10 @@ export const submitSchema = z.object({
   signedXdr: z.string().min(1, "signedXdr is required"),
 });
 
+export const updateStatusSchema = z.object({
+  status: z.string().min(1, "status is required"),
+});
+
 export function validate(schema: z.ZodType) {
   return (req: Request, _res: Response, next: NextFunction) => {
     const result = schema.safeParse(req.body);
