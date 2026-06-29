@@ -53,6 +53,7 @@ export function EscrowCard({ escrow, onAction }: Props) {
   }
 
   async function handleAction(action: string) {
+    if (!address) return;
     switch (action) {
       case "deposit":
         await buildSignAndSubmit(action, () =>

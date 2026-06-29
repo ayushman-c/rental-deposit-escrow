@@ -44,6 +44,16 @@ export interface CreateEscrowInput {
   rentalEndDate: string;
 }
 
+export interface EscrowActionInput {
+  escrowId: string;
+  from: string;
+}
+
+export interface ResolveDisputeInput extends EscrowActionInput {
+  tenantAmount: string;
+  landlordAmount: string;
+}
+
 export interface BuildResponse {
   xdr: string;
   contractId: string;

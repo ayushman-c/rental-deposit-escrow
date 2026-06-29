@@ -1,4 +1,12 @@
-import type { Escrow, BuildResponse, SubmitResponse, EscrowChainData } from "@/types";
+import type {
+  Escrow,
+  BuildResponse,
+  SubmitResponse,
+  EscrowChainData,
+  CreateEscrowInput,
+  EscrowActionInput,
+  ResolveDisputeInput,
+} from "@/types";
 
 const API_BASE = "/api";
 
@@ -45,7 +53,7 @@ export const api = {
   escrows: {
     list: () => request<Escrow[]>("/escrows"),
     get: (id: string) => request<Escrow>(`/escrows/${id}`),
-    create: (data: any) =>
+    create: (data: CreateEscrowInput) =>
       request<Escrow>("/escrows", {
         method: "POST",
         body: JSON.stringify(data),
@@ -55,47 +63,47 @@ export const api = {
   },
 
   build: {
-    createEscrow: (data: any) =>
+    createEscrow: (data: CreateEscrowInput) =>
       request<BuildResponse>("/escrows/build/create-escrow", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    deposit: (data: any) =>
+    deposit: (data: EscrowActionInput) =>
       request<BuildResponse>("/escrows/build/deposit", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    requestRelease: (data: any) =>
+    requestRelease: (data: EscrowActionInput) =>
       request<BuildResponse>("/escrows/build/request-release", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    approveRelease: (data: any) =>
+    approveRelease: (data: EscrowActionInput) =>
       request<BuildResponse>("/escrows/build/approve-release", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    raiseDispute: (data: any) =>
+    raiseDispute: (data: EscrowActionInput) =>
       request<BuildResponse>("/escrows/build/raise-dispute", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    resolveDispute: (data: any) =>
+    resolveDispute: (data: ResolveDisputeInput) =>
       request<BuildResponse>("/escrows/build/resolve-dispute", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    releaseAfterTimeout: (data: any) =>
+    releaseAfterTimeout: (data: EscrowActionInput) =>
       request<BuildResponse>("/escrows/build/release-after-timeout", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    refundAfterExpiry: (data: any) =>
+    refundAfterExpiry: (data: EscrowActionInput) =>
       request<BuildResponse>("/escrows/build/refund-after-expiry", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    cancel: (data: any) =>
+    cancel: (data: EscrowActionInput) =>
       request<BuildResponse>("/escrows/build/cancel", {
         method: "POST",
         body: JSON.stringify(data),
