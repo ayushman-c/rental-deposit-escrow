@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { api } from "@/lib/api";
+import { signTransaction } from "@/lib/wallet";
 import { useWallet } from "@/providers/WalletProvider";
 import type { CreateEscrowInput } from "@/types";
 
@@ -20,20 +21,41 @@ export function CreateEscrowForm({ onCreated }: Props) {
     rentalEndDate: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!address) return;
     setSubmitting(true);
+    setError(null);
+
     try {
-      await api.escrows.create({
+      const payload = {
         ...form,
         landlord: form.landlord || address,
         depositAmount: form.depositAmount,
         rentalEndDate: form.rentalEndDate,
-      });
+      };
+
+      // 1. Build unsigned XDR
+      const { xdr, networkPassphrase } = await api.build.createEscrow(payload);
+
+      // 2. Sign with wallet
+      const signedXdr = await signTransaction(xdr, { networkPassphrase });
+
+      // 3. Submit to chain
+      const result = await api.submit(signedXdr);
+      if (result.status !== "SUCCESS") {
+        throw new Error(`Transaction failed: ${result.status}`);
+      }
+
+      // 4. Save locally so it appears in the list
+      await api.escrows.create(payload);
+
       setForm({ landlord: "", tenant: "", depositAmount: "", token: "", rentalEndDate: "" });
       onCreated();
+    } catch (err: any) {
+      setError(err.message);
     } finally {
       setSubmitting(false);
     }
@@ -76,9 +98,14 @@ export function CreateEscrowForm({ onCreated }: Props) {
             required
           />
         </div>
+
+        {error && (
+          <p className="text-sm text-red-400 bg-red-950/50 rounded-lg px-3 py-2">{error}</p>
+        )}
+
         <motion.div whileTap={{ scale: 0.98 }}>
           <Button type="submit" disabled={submitting || !address} className="w-full">
-            {submitting ? "Creating..." : "Create Escrow"}
+            {submitting ? "Submitting..." : "Create Escrow"}
           </Button>
         </motion.div>
       </form>

@@ -8,4 +8,7 @@ export const config = {
     networkPassphrase: process.env.SOROBAN_NETWORK_PASSPHRASE || "Test SDF Network ; September 2015",
     rpcUrl: process.env.SOROBAN_RPC_URL || "https://soroban-testnet.stellar.org",
   },
+  auth: {
+    jwtSecret: process.env.JWT_SECRET || "dev-secret-change-in-production",
+  },
 };

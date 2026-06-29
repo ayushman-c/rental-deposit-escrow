@@ -13,7 +13,9 @@ import {
   connectWallet,
   disconnectWallet,
   getWalletAddress,
+  signTransaction,
 } from "@/lib/wallet";
+import { api, setAuthToken, getAuthToken } from "@/lib/api";
 
 interface WalletState {
   address: string | null;
@@ -29,6 +31,22 @@ interface WalletContextValue extends WalletState {
 }
 
 const WalletContext = createContext<WalletContextValue | null>(null);
+
+async function authenticateUser(address: string): Promise<void> {
+  try {
+    const existingToken = getAuthToken();
+    if (existingToken) return;
+
+    const { challengeXdr } = await api.auth.challenge(address);
+    const signedXdr = await signTransaction(challengeXdr, {
+      networkPassphrase: "Test SDF Network ; September 2015",
+    });
+    const { token } = await api.auth.verify(address, signedXdr);
+    setAuthToken(token);
+  } catch (err) {
+    console.warn("Auth failed, build endpoints will be unavailable:", err);
+  }
+}
 
 async function fetchBalance(address: string): Promise<string | null> {
   try {
@@ -64,6 +82,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         fetchBalance(addr).then((bal) =>
           setState((prev) => ({ ...prev, balance: bal })),
         );
+        authenticateUser(addr);
       }
     });
   }, []);
@@ -94,6 +113,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       );
 
       const unsub2 = StellarWalletsKit.on(KitEventType.DISCONNECT, () => {
+        setAuthToken(null);
         setState({
           address: null,
           isConnected: false,
@@ -122,6 +142,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         isConnecting: false,
         balance,
       });
+      await authenticateUser(address);
     } catch {
       setState((prev) => ({ ...prev, isConnecting: false }));
     }
@@ -129,6 +150,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   const disconnect = useCallback(() => {
     disconnectWallet();
+    setAuthToken(null);
     setState({
       address: null,
       isConnected: false,

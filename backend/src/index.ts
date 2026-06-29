@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { config } from "./config";
 import escrowRoutes from "./routes/escrow";
+import authRoutes from "./routes/auth";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
@@ -15,6 +16,7 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+app.use("/api/auth", authRoutes);
 app.use("/api/escrows", escrowRoutes);
 
 app.use(errorHandler);

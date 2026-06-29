@@ -2,9 +2,23 @@ import type { Escrow, BuildResponse, SubmitResponse, EscrowChainData } from "@/t
 
 const API_BASE = "/api";
 
+let authToken: string | null = null;
+
+export function setAuthToken(token: string | null) {
+  authToken = token;
+}
+
+export function getAuthToken(): string | null {
+  return authToken;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers,
     ...options,
   });
   if (!res.ok) {
@@ -15,6 +29,19 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  auth: {
+    challenge: (address: string) =>
+      request<{ challengeXdr: string }>("/auth/challenge", {
+        method: "POST",
+        body: JSON.stringify({ address }),
+      }),
+    verify: (address: string, signedXdr: string) =>
+      request<{ token: string }>("/auth/verify", {
+        method: "POST",
+        body: JSON.stringify({ address, signedXdr }),
+      }),
+  },
+
   escrows: {
     list: () => request<Escrow[]>("/escrows"),
     get: (id: string) => request<Escrow>(`/escrows/${id}`),
